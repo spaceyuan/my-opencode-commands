@@ -4,7 +4,7 @@ description: >
   分析当前分支变更，按 Conventional Commits 英文规范生成中文提交信息，
   执行 git commit 与 git push，并输出中文摘要。
 metadata:
-  version: "1.3"
+  version: "1.4"
   category: command
   domain: git
   workflow: commit-and-push
@@ -29,6 +29,7 @@ metadata:
 - `-r, --repo <path>`（可选）：指定仓库目录
 - `<repoPath>`（可选）：位置参数，作为仓库目录（如 `./skills`、`../skills`）
 - `--auto-add`（可选）：当无已暂存内容时自动执行 `git add -A`
+- `--fast-message`（可选）：强制使用快速消息生成路径，不调用 `@skills/git-commit/SKILL.md`
 
 仓库目录选择优先级：
 
@@ -49,8 +50,10 @@ metadata:
    - 默认仅提交已暂存内容（推荐手动 `git add` 精准控制）
    - 如果无已暂存内容且传入 `--auto-add`，运行 `git add -A` 暂存全部改动
    - 如果无已暂存内容且未传入 `--auto-add`，提示“请先手动 git add 或使用 --auto-add”并结束
-5. 先调用 `@skills/git-commit/SKILL.md`，并按该 skill 生成提交信息：
-   - 使用 Conventional Commits 英文规范：`<type>(<scope>): <subject>`
+5. 生成提交信息：
+   - 如果传入 `--fast-message`，或当前仅涉及少量已暂存文件且变更集中在单一模块，则直接根据文件路径与 diff 摘要快速生成中文提交信息，不调用 `@skills/git-commit/SKILL.md`
+   - 其他复杂变更再调用 `@skills/git-commit/SKILL.md`，并按该 skill 生成提交信息
+   - 提交格式保持 `Conventional Commits` 英文规范：`<type>(<scope>): <subject>`
    - `type` / `scope` 保持英文（如 `feat`, `fix`, `auth`, `invoices`）
    - `subject` 使用中文，整体格式为：`type(scope): 中文摘要` 或 `type: 中文摘要`
    - 如存在多个重要变更，可补充中文项目符号正文（建议不超过 5 条）
@@ -79,6 +82,7 @@ metadata:
 - `/commit` -> 当前目录，默认推送 `origin`
 - `/commit ./skills` -> 指定目录，默认推送 `origin`
 - `/commit --auto-add ./skills` -> 指定目录且无已暂存内容时自动暂存再提交
+- `/commit --fast-message ./skills` -> 强制走快速消息生成路径
 - `/commit -p origin,upstream ../skills` -> 指定目录并依次推送多个远程
 - `/commit -r ../skills -p upstream` -> 显式参数方式
 - `/commit --all-remotes ../skills` -> 指定目录并推送全部远程

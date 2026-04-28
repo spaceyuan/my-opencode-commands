@@ -14,3 +14,5 @@
 - `commit` 命令增加参数优先级、参数冲突处理（`--all-remotes` 与 `-p` 互斥）
 - `commit` 命令默认改为“仅提交已暂存内容”，不再自动全量 `git add -A`
 - `commit` 命令新增 `--auto-add` 参数：无已暂存内容时可选择自动 `git add -A`
+- `commit` 命令新增快速消息路径：小改动默认优先快速生成，复杂变更再调用 `git-commit` skill
+- `commit` 命令新增 `--fast-message` 参数：可强制跳过 skill，加快提交速度

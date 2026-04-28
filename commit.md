@@ -4,7 +4,7 @@ description: >
   分析当前分支变更，按 Conventional Commits 英文规范生成中文提交信息，
   执行 git commit 与 git push，并输出中文摘要。
 metadata:
-  version: "1.2"
+  version: "1.3"
   category: command
   domain: git
   workflow: commit-and-push
@@ -28,6 +28,7 @@ metadata:
 - `--all-remotes`（可选）：推送到当前仓库全部远程（高风险，必须显式传入）
 - `-r, --repo <path>`（可选）：指定仓库目录
 - `<repoPath>`（可选）：位置参数，作为仓库目录（如 `./skills`、`../skills`）
+- `--auto-add`（可选）：当无已暂存内容时自动执行 `git add -A`
 
 仓库目录选择优先级：
 
@@ -44,7 +45,10 @@ metadata:
 1. 按“仓库目录选择优先级”解析目标仓库，并校验为 Git 仓库
 2. 运行 `git status --short` 查看所有变更文件
 3. 运行 `git diff` 和 `git diff --cached` 理解实际改动内容
-4. 如果没有已暂存内容，运行 `git add -A` 暂存全部改动
+4. 检查是否存在已暂存内容：
+   - 默认仅提交已暂存内容（推荐手动 `git add` 精准控制）
+   - 如果无已暂存内容且传入 `--auto-add`，运行 `git add -A` 暂存全部改动
+   - 如果无已暂存内容且未传入 `--auto-add`，提示“请先手动 git add 或使用 --auto-add”并结束
 5. 先调用 `@skills/git-commit/SKILL.md`，并按该 skill 生成提交信息：
    - 使用 Conventional Commits 英文规范：`<type>(<scope>): <subject>`
    - `type` / `scope` 保持英文（如 `feat`, `fix`, `auth`, `invoices`）
@@ -66,6 +70,7 @@ metadata:
 边界处理：
 
 - 如果没有任何变更，直接告知并结束
+- 如果存在变更但没有已暂存内容，且未传入 `--auto-add`，直接告知并结束
 - 如果存在 merge conflict，提示风险并中止提交
 - 如果目标远程全部推送失败，命令整体返回失败状态
 
@@ -73,6 +78,7 @@ metadata:
 
 - `/commit` -> 当前目录，默认推送 `origin`
 - `/commit ./skills` -> 指定目录，默认推送 `origin`
+- `/commit --auto-add ./skills` -> 指定目录且无已暂存内容时自动暂存再提交
 - `/commit -p origin,upstream ../skills` -> 指定目录并依次推送多个远程
 - `/commit -r ../skills -p upstream` -> 显式参数方式
 - `/commit --all-remotes ../skills` -> 指定目录并推送全部远程

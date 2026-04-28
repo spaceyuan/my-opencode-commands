@@ -12,3 +12,5 @@
 - `commit` 命令新增仓库路径参数：支持 `/commit ./skills` 与 `-r, --repo <path>`
 - `commit` 命令新增 `-p, --push-remotes <list>` 参数，支持与仓库路径组合使用
 - `commit` 命令增加参数优先级、参数冲突处理（`--all-remotes` 与 `-p` 互斥）
+- `commit` 命令默认改为“仅提交已暂存内容”，不再自动全量 `git add -A`
+- `commit` 命令新增 `--auto-add` 参数：无已暂存内容时可选择自动 `git add -A`

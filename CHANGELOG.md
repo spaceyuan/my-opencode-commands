@@ -21,4 +21,3 @@
 - 新增 `scripts/commit.py`：由 Python 处理参数解析、仓库校验、提交与推送等确定性流程
 - `commit` 命令升级为脚本驱动：只有复杂提交信息生成才调用远程模型与 `git-commit` skill
 - `commit` 命令新增 `--smart-message` 参数：强制调用模型生成提交信息
-

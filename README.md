@@ -78,3 +78,4 @@
 - `/commit` 入口调用 `commands/scripts/commit.py`
 - `/commit -h` 与 `/commit --help` 直接读取 `commands/commit-help.md`
 - 只有复杂提交信息生成才调用远程模型与 `git-commit` skill
+# test speed

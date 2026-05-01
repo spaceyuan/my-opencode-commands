@@ -25,3 +25,4 @@ _ide_helper_models.php
 *.log
 .DS_Store
 .vscode/*
+scripts/__pycache__

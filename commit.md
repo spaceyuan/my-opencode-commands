@@ -1,10 +1,10 @@
 ---
 name: commit
 description: >
-  分析当前分支变更，按 Conventional Commits 英文规范生成中文提交信息，
-  执行 git commit 与 git push，并输出中文摘要。
+  使用 Python 脚本处理确定性 Git 提交流程，必要时再调用 git-commit skill
+  生成复杂提交信息。
 metadata:
-  version: "1.4"
+  version: "2.0"
   category: command
   domain: git
   workflow: commit-and-push
@@ -14,75 +14,86 @@ metadata:
     - git
     - commit
     - push
+    - python
     - multi-remote
     - repo-path
     - conventional-commits
     - chinese-summary
 ---
 
-分析当前仓库中的所有 Git 变更，并按以下流程执行提交：
+# Commit Command
 
-参数约定：
+用 Python 脚本执行确定性流程，减少无用模型调用。
 
-- `-p, --push-remotes <list>`（可选）：指定推送远程，逗号分隔（如 `origin,upstream`）
-- `--all-remotes`（可选）：推送到当前仓库全部远程（高风险，必须显式传入）
-- `-r, --repo <path>`（可选）：指定仓库目录
-- `<repoPath>`（可选）：位置参数，作为仓库目录（如 `./skills`、`../skills`）
-- `--auto-add`（可选）：当无已暂存内容时自动执行 `git add -A`
-- `--fast-message`（可选）：强制使用快速消息生成路径，不调用 `@skills/git-commit/SKILL.md`
+## 执行入口
 
-仓库目录选择优先级：
+将用户传入的参数原样传给脚本：
 
-1. `-r, --repo <path>`
-2. `<repoPath>` 位置参数
-3. 当前目录
+```txt
+python3 /Users/apple/.config/opencode/commands/scripts/commit.py <args>
+```
 
-远程选择优先级：
+## 快速帮助
 
-1. `--all-remotes`
-2. `-p, --push-remotes <list>`
-3. 默认 `origin`
+如果用户传入 `-h` 或 `--help`，只运行：
 
-1. 按“仓库目录选择优先级”解析目标仓库，并校验为 Git 仓库
-2. 运行 `git status --short` 查看所有变更文件
-3. 运行 `git diff` 和 `git diff --cached` 理解实际改动内容
-4. 检查是否存在已暂存内容：
-   - 默认仅提交已暂存内容（推荐手动 `git add` 精准控制）
-   - 如果无已暂存内容且传入 `--auto-add`，运行 `git add -A` 暂存全部改动
-   - 如果无已暂存内容且未传入 `--auto-add`，提示“请先手动 git add 或使用 --auto-add”并结束
-5. 生成提交信息：
-   - 如果传入 `--fast-message`，或当前仅涉及少量已暂存文件且变更集中在单一模块，则直接根据文件路径与 diff 摘要快速生成中文提交信息，不调用 `@skills/git-commit/SKILL.md`
-   - 其他复杂变更再调用 `@skills/git-commit/SKILL.md`，并按该 skill 生成提交信息
-   - 提交格式保持 `Conventional Commits` 英文规范：`<type>(<scope>): <subject>`
-   - `type` / `scope` 保持英文（如 `feat`, `fix`, `auth`, `invoices`）
-   - `subject` 使用中文，整体格式为：`type(scope): 中文摘要` 或 `type: 中文摘要`
-   - 如存在多个重要变更，可补充中文项目符号正文（建议不超过 5 条）
-6. 使用 `git commit` 执行提交
-7. 根据“远程选择优先级”解析目标远程列表，并去重后按顺序逐个推送：
-   - 先校验远程是否存在：`git remote get-url <remote>`
-   - 远程不存在：标记该远程失败并继续处理下一个远程
-   - 远程存在：执行 `git push <remote> HEAD`
-   - 若因没有 upstream 失败，执行 `git push --set-upstream <remote> HEAD`
-   - 若仍失败或因其他原因失败（如远端分支已分叉），清晰报告错误且不要强制推送
-8. 用中文输出结果摘要：仓库目录、分支名、已提交文件、提交信息、commit hash、远程列表与各远程 push 状态
+```txt
+python3 /Users/apple/.config/opencode/commands/scripts/commit.py --help
+```
 
-参数冲突处理：
+脚本会直接读取 `@commands/commit-help.md` 并输出，不执行任何 Git 操作。
 
-- `--all-remotes` 与 `-p, --push-remotes` 互斥，同时传入时直接报错并结束
+## 脚本职责
 
-边界处理：
+`scripts/commit.py` 负责以下确定性操作：
 
-- 如果没有任何变更，直接告知并结束
-- 如果存在变更但没有已暂存内容，且未传入 `--auto-add`，直接告知并结束
-- 如果存在 merge conflict，提示风险并中止提交
-- 如果目标远程全部推送失败，命令整体返回失败状态
+- 解析参数：`-p`、`--all-remotes`、`-r`、`--repo`、`--auto-add`、`--fast-message`、`--smart-message`、`-h`
+- 解析并校验仓库目录
+- 检查 `git status --short`
+- 检查 `git diff` 与 `git diff --cached`
+- 判断是否存在已暂存内容
+- 必要时执行 `git add -A`（仅在传入 `--auto-add` 时）
+- 校验远程仓库
+- 执行 `git commit`
+- 按顺序执行一个或多个 `git push`
+- 输出中文摘要
+
+## 模型职责
+
+只有当脚本输出 `NEED_SMART_MESSAGE` 时，才调用 `@skills/git-commit/SKILL.md` 生成提交信息。
+
+处理方式：
+
+1. 读取脚本输出中的已暂存文件、diff 统计和 diff 内容
+2. 调用 `@skills/git-commit/SKILL.md`
+3. 生成 `type(scope): 中文摘要` 格式的提交信息
+4. 重新运行同一个脚本，并追加 `--message "<commit message>"`
 
 示例：
 
+```txt
+python3 /Users/apple/.config/opencode/commands/scripts/commit.py -p origin ./commands --message "feat(commit): 支持脚本化提交流程"
+```
+
+## 参数
+
+- `-p, --push-remotes <list>`：指定推送远程，逗号分隔，默认 `origin`
+- `--all-remotes`：推送到当前仓库全部远程（高风险）
+- `-r, --repo <path>`：指定仓库目录
+- `<repoPath>`：位置参数，作为仓库目录
+- `--auto-add`：无已暂存内容时自动 `git add -A`
+- `--fast-message`：强制使用本地快速消息生成路径
+- `--smart-message`：强制请求模型生成提交信息
+- `-h, --help`：显示帮助并退出
+
+## 示例
+
 - `/commit` -> 当前目录，默认推送 `origin`
+- `/commit -h` -> 直接输出 `commit-help.md`
 - `/commit ./skills` -> 指定目录，默认推送 `origin`
 - `/commit --auto-add ./skills` -> 指定目录且无已暂存内容时自动暂存再提交
-- `/commit --fast-message ./skills` -> 强制走快速消息生成路径
+- `/commit --fast-message ./skills` -> 强制走本地快速消息路径
+- `/commit --smart-message ./skills` -> 强制由模型生成提交信息
 - `/commit -p origin,upstream ../skills` -> 指定目录并依次推送多个远程
 - `/commit -r ../skills -p upstream` -> 显式参数方式
 - `/commit --all-remotes ../skills` -> 指定目录并推送全部远程

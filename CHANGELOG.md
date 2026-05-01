@@ -16,3 +16,8 @@
 - `commit` 命令新增 `--auto-add` 参数：无已暂存内容时可选择自动 `git add -A`
 - `commit` 命令新增快速消息路径：小改动默认优先快速生成，复杂变更再调用 `git-commit` skill
 - `commit` 命令新增 `--fast-message` 参数：可强制跳过 skill，加快提交速度
+- `commit` 命令新增 `-h, --help` 参数：展示命令帮助并立即退出，不执行 Git 操作
+- 新增 `commit-help.md`：独立维护 `/commit` 帮助内容
+- 新增 `scripts/commit.py`：由 Python 处理参数解析、仓库校验、提交与推送等确定性流程
+- `commit` 命令升级为脚本驱动：只有复杂提交信息生成才调用远程模型与 `git-commit` skill
+- `commit` 命令新增 `--smart-message` 参数：强制调用模型生成提交信息
